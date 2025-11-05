@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>⚡ Data Center Power Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f5f7fb;
+      margin: 40px;
+      color: #2e3b4e;
+    }
+
+    h1 {
+      color: #1e293b;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 25px;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      font-size: 15px;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 1000px;
+      height: 450px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+    }
+
+    #alert-bar {
+      display: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    #refresh-status {
+      font-size: 14px;
+      color: gray;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>⚡ Data Center Power Dashboard</h1>
+  <div id="alert-bar"></div>
+  <div id="summary"></div>
+
+  <canvas id="chart"></canvas>
+  <h2>📊 Alert Trend (All Alerts)</h2>
+  <canvas id="trendChart"></canvas>
+  <p id="refresh-status"></p>
+
+  <script>
+    let chart, trendChart, lastAlertCount = 0;
+
+    async function loadSummary() {
+      const res = await fetch('/summary');
+      const data = await res.json();
+      document.getElementById('summary').innerHTML = `
+        <div class="card"><b>Rows</b>: ${data.rows}</div>
+        <div class="card"><b>Average Power</b>: ${data.average_kw} kW</div>
+        <div class="card"><b>Max Power</b>: ${data.max_kw} kW</div>
+        <div class="card"><b>Min Power</b>: ${data.min_kw} kW</div>
+        <div class="card" style="color:${data.alerts > 0 ? 'red' : 'green'}">
+          <b>Alerts (>100kW)</b>: ${data.alerts}
+        </div>
+      `;
+      if (data.alerts > lastAlertCount)
+        showAlert(`⚠️ New Power Alerts detected! (${data.alerts} total)`);
+      lastAlertCount = data.alerts;
+    }
+
+    function showAlert(msg) {
+      const bar = document.getElementById("alert-bar");
+      bar.innerText = msg;
+      bar.style.display = "block";
+      setTimeout(() => (bar.style.display = "none"), 6000);
+    }
+
+    async function loadChart() {
+      const res = await fetch('/series');
+      const data = await res.json();
+      const ctx = document.getElementById('chart').getContext('2d');
+      const pointColors = data.total_kw.map(v => v > 100 ? 'red' : 'blue');
+
+      if (!chart) {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.timestamp,
+            datasets: [{
+              label: 'Total Power (kW)',
+              data: data.total_kw,
+              borderColor: 'rgba(37,99,235,0.8)',
+              pointBackgroundColor: pointColors,
+              tension: 0.3,
+              fill: true,
+              backgroundColor: createGradient(ctx)
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: true, position: 'top' } },
+            scales: { x: { display: false }, y: { beginAtZero: true } }
+          }
+        });
+      } else {
+        chart.data.labels = data.timestamp;
+        chart.data.datasets[0].data = data.total_kw;
+        chart.data.datasets[0].pointBackgroundColor = pointColors;
+        chart.update();
+      }
+    }
+
+    function createGradient(ctx) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(37,99,235,0.4)');
+      gradient.addColorStop(1, 'rgba(37,99,235,0)');
+      return gradient;
+    }
+
+    // show all alert points
+    async function loadTrend() {
+      const res = await fetch('/alerts/trend');
+      const data = await res.json();
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (trendChart) trendChart.destroy();
+
+      trendChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          labels: data.dates,
+          datasets: [{
+            label: 'Alert Points',
+            data: data.dates.map((d, i) => ({ x: i, y: data.counts[i] })),
+            backgroundColor: 'rgba(239,68,68,0.8)'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true, position: 'top' } },
+          scales: { x: { display: false }, y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    async function refreshLoop() {
+      await loadSummary();
+      await loadChart();
+      await loadTrend();
+      document.getElementById('refresh-status').innerText =
+        'Last updated: ' + new Date().toLocaleTimeString();
+      setTimeout(refreshLoop, 10000);
+    }
+
+    refreshLoop();
+  </script>
+</body>
+
+</html>

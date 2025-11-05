@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.DS_Store
+.vscode/
+
+# Logs & temp
+logs/
+*.log
+
+# Data (如果是临时/大文件就忽略；要保留仓库里的CSV就删掉下一行)
+# data/
+
+# Build/outputs
+dist/
+build/
