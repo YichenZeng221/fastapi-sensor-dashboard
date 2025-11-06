@@ -40,9 +40,3 @@ uvicorn app:app --reload
     ├── sensor_data.csv
     └── alerts_log.csv
 
-    
-# FastAPI Sensor Dashboard
-A lightweight FastAPI app to visualize commissioning power data (CSV) and highlight power alerts.
-
-<img width="1209" height="1477" alt="Screenshot 2025-11-05 at 7 53 04 PM" src="https://github.com/user-attachments/assets/92eb1037-9a9b-4f27-90ef-1615d4f50962" />
-<img width="2560" height="1440" alt="Screenshot 2025-11-05 at 7 53 37 PM" src="https://github.com/user-attachments/assets/8eadedc5-39bd-4115-8b3c-7f9205b47e0a" />
