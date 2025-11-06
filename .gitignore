@@ -12,7 +12,7 @@ env/
 logs/
 *.log
 
-# Data (若为临时/大文件可忽略；想保留就删掉下一行的 #)
+# Data 
 # data/
 
 # Build/outputs
