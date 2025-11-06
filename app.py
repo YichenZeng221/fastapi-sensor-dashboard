@@ -81,7 +81,7 @@ def alert_trend():
     if alerts.empty:
         return {"dates": [], "counts": []}
 
-    # 排序并只取最近 500 个点避免前端太重（可按需调小/调大）
+    # Sort the data and only retrieve the most recent 500 points to avoid making the front end too heavy (the size can be adjusted as needed)
     alerts = alerts.sort_values("timestamp").tail(500)
 
     return {
